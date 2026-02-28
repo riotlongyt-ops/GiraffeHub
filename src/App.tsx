@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, 
   Menu, 
@@ -25,31 +25,44 @@ import {
   FileText
 } from 'lucide-react';
 
-// --- Triple Sandbox Utility ---
+// --- Sandbox Utility ---
 
-const getTripleSandboxUrl = (url: string, config: string) => {
-  if (url.startsWith('chrome://')) return url;
+const renderBrowserStage = (tab: { id: string; url: string; name: string }, renderInternalPage: (url: string) => React.ReactNode) => {
+  if (tab.url.startsWith('chrome://')) return renderInternalPage(tab.url);
+
+  const sandboxConfig = "allow-scripts allow-forms allow-same-origin allow-popups allow-modals allow-presentation";
   
-  // Layer 3: Inner-most iframe
-  const layer3Content = `
-    <html><body style="margin:0;overflow:hidden;background:#fff;">
-      <iframe src="${url}" style="width:100%;height:100%;border:none;" sandbox="${config}" allowfullscreen></iframe>
-    </body></html>
+  // Using srcDoc wrapper to fix origin issues in file:// protocol and ensure consistent loading
+  const iframeSrcDoc = `
+    <!DOCTYPE html>
+    <html style="height:100%; margin:0; padding:0;">
+      <head>
+        <meta charset="utf-8">
+        <title>${tab.name}</title>
+        <style>
+          body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #fff; }
+          iframe { width: 100%; height: 100%; border: none; }
+        </style>
+      </head>
+      <body>
+        <iframe 
+          src="${tab.url}" 
+          sandbox="${sandboxConfig}" 
+          allowfullscreen
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; geolocation; microphone; camera;"
+        ></iframe>
+      </body>
+    </html>
   `;
-  const layer3Blob = new Blob([layer3Content], { type: 'text/html' });
-  const layer3Url = URL.createObjectURL(layer3Blob);
 
-  // Layer 2: Middle iframe
-  const layer2Content = `
-    <html><body style="margin:0;overflow:hidden;background:#fff;">
-      <iframe src="${layer3Url}" style="width:100%;height:100%;border:none;" sandbox="${config}" allowfullscreen></iframe>
-    </body></html>
-  `;
-  const layer2Blob = new Blob([layer2Content], { type: 'text/html' });
-  const layer2Url = URL.createObjectURL(layer2Blob);
-
-  // Layer 1: Outer iframe
-  return layer2Url;
+  return (
+    <iframe 
+      key={`${tab.id}-${tab.url}`}
+      srcDoc={iframeSrcDoc}
+      className="w-full h-full border-none bg-white"
+      allowFullScreen
+    />
+  );
 };
 
 const Chrome65Remake = () => {
@@ -189,8 +202,10 @@ const Chrome65Remake = () => {
 
   const downloadBrowser = async () => {
     try {
-      const response = await fetch(window.location.href);
-      const html = await response.text();
+      // Get the entire HTML content including the doctype
+      const doctype = new XMLSerializer().serializeToString(document.doctype!);
+      const html = doctype + document.documentElement.outerHTML;
+      
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -216,7 +231,17 @@ const Chrome65Remake = () => {
     if (url === 'chrome://new-tab') {
       return (
         <div className="w-full h-full bg-white flex flex-col items-center pt-24 font-sans overflow-y-auto">
-          <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" alt="Google" className="w-[272px] mb-8" />
+          <div className="mb-8">
+            {/* Using a text-based logo or a more reliable SVG for offline support */}
+            <div className="flex items-center text-6xl font-bold tracking-tighter">
+              <span className="text-[#4285F4]">G</span>
+              <span className="text-[#EA4335]">o</span>
+              <span className="text-[#FBBC05]">o</span>
+              <span className="text-[#4285F4]">g</span>
+              <span className="text-[#34A853]">l</span>
+              <span className="text-[#EA4335]">e</span>
+            </div>
+          </div>
           <div className="w-full max-w-[584px] relative group px-4">
             <input 
               type="text" 
@@ -552,17 +577,7 @@ const Chrome65Remake = () => {
               transition={{ duration: 0.15 }}
               className="w-full h-full"
             >
-              {activeTab.url.startsWith('chrome://') ? (
-                renderInternalPage(activeTab.url)
-              ) : (
-                <iframe 
-                  key={`${activeTab.id}-${activeTab.url}`}
-                  src={getTripleSandboxUrl(activeTab.url, "allow-scripts allow-forms allow-same-origin")}
-                  className="w-full h-full border-none"
-                  sandbox="allow-scripts allow-forms allow-same-origin"
-                  allowFullScreen
-                />
-              )}
+              {renderBrowserStage(activeTab, renderInternalPage)}
             </motion.div>
           )}
         </AnimatePresence>

@@ -12,11 +12,6 @@ export default defineConfig(({mode}) => {
     build: {
       cssCodeSplit: false,
       assetsInlineLimit: 100000000,
-      rollupOptions: {
-        output: {
-          inlineDynamicImports: true,
-        },
-      },
     },
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
