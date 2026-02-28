@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, 
   Menu, 
@@ -32,25 +32,23 @@ const renderBrowserStage = (tab: { id: string; url: string; name: string }, rend
 
   const sandboxConfig = "allow-scripts allow-forms allow-same-origin allow-popups allow-modals allow-presentation";
   
-  // Using srcDoc wrapper to fix origin issues in file:// protocol and ensure consistent loading
-  const iframeSrcDoc = `
+  // The inner iframe is the "guest" site which we sandbox for security.
+  const innerIframe = `<iframe src="${tab.url}" style="width:100%;height:100%;border:none;background:#fff;" sandbox="${sandboxConfig}" allowfullscreen></iframe>`;
+  
+  // The srcDoc wrapper provides the isolation layer. 
+  // We remove 'sandbox' from the outer iframe to allow it to inherit the page's origin (fixing blob:null issues),
+  // while the inner iframe remains strictly sandboxed.
+  const srcDoc = `
     <!DOCTYPE html>
-    <html style="height:100%; margin:0; padding:0;">
+    <html>
       <head>
-        <meta charset="utf-8">
-        <title>${tab.name}</title>
+        <meta charset="UTF-8">
         <style>
-          body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #fff; }
-          iframe { width: 100%; height: 100%; border: none; }
+          body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background: #fff; }
         </style>
       </head>
       <body>
-        <iframe 
-          src="${tab.url}" 
-          sandbox="${sandboxConfig}" 
-          allowfullscreen
-          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; geolocation; microphone; camera;"
-        ></iframe>
+        ${innerIframe}
       </body>
     </html>
   `;
@@ -58,8 +56,8 @@ const renderBrowserStage = (tab: { id: string; url: string; name: string }, rend
   return (
     <iframe 
       key={`${tab.id}-${tab.url}`}
-      srcDoc={iframeSrcDoc}
-      className="w-full h-full border-none bg-white"
+      srcDoc={srcDoc}
+      className="w-full h-full border-none"
       allowFullScreen
     />
   );
@@ -202,10 +200,8 @@ const Chrome65Remake = () => {
 
   const downloadBrowser = async () => {
     try {
-      // Get the entire HTML content including the doctype
-      const doctype = new XMLSerializer().serializeToString(document.doctype!);
-      const html = doctype + document.documentElement.outerHTML;
-      
+      const response = await fetch(window.location.href);
+      const html = await response.text();
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -231,17 +227,7 @@ const Chrome65Remake = () => {
     if (url === 'chrome://new-tab') {
       return (
         <div className="w-full h-full bg-white flex flex-col items-center pt-24 font-sans overflow-y-auto">
-          <div className="mb-8">
-            {/* Using a text-based logo or a more reliable SVG for offline support */}
-            <div className="flex items-center text-6xl font-bold tracking-tighter">
-              <span className="text-[#4285F4]">G</span>
-              <span className="text-[#EA4335]">o</span>
-              <span className="text-[#FBBC05]">o</span>
-              <span className="text-[#4285F4]">g</span>
-              <span className="text-[#34A853]">l</span>
-              <span className="text-[#EA4335]">e</span>
-            </div>
-          </div>
+          <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" alt="Google" className="w-[272px] mb-8" />
           <div className="w-full max-w-[584px] relative group px-4">
             <input 
               type="text" 
