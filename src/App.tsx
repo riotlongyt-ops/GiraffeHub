@@ -187,6 +187,24 @@ const Chrome65Remake = () => {
     setShowMenu(false);
   };
 
+  const downloadBrowser = async () => {
+    try {
+      const response = await fetch(window.location.href);
+      const html = await response.text();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Chrome-65-Remake-Offline.html';
+      a.click();
+      URL.revokeObjectURL(url);
+      setShowMenu(false);
+    } catch (error) {
+      console.error('Failed to download browser:', error);
+      alert('Failed to download the offline version. Please try again.');
+    }
+  };
+
   useEffect(() => {
     if (tabs.length === 0) addTab();
   }, []);
@@ -481,6 +499,9 @@ const Chrome65Remake = () => {
                 </button>
                 <button onClick={downloadOfflineHTML} className="w-full px-4 py-2 text-left text-sm hover:bg-zinc-100 flex items-center gap-3 text-emerald-600 font-medium">
                   <Download size={16} /> Save Page Offline
+                </button>
+                <button onClick={downloadBrowser} className="w-full px-4 py-2 text-left text-sm hover:bg-zinc-100 flex items-center gap-3 text-blue-600 font-medium">
+                  <Globe size={16} /> Download Browser (Offline)
                 </button>
                 <div className="h-px bg-zinc-100 my-1"></div>
                 <button onClick={() => addTab('chrome://settings')} className="w-full px-4 py-2 text-left text-sm hover:bg-zinc-100 flex items-center gap-3">

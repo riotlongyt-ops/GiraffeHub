@@ -1,14 +1,19 @@
-# Chrome 65 Remake - Offline Usage
+# Chrome 65 Remake - Portable Static Build
 
-This directory contains a single HTML file that loads the built scripts from the main project's `dist` directory.
+The application is now configured to build as a **single, self-contained HTML file**.
 
 ## How to use:
-1.  Run `npm run build` in the main project directory.
-2.  Open `offline/index.html` in your browser.
+1.  Run `npm run build`.
+2.  The file `dist/index.html` is now a single file containing all scripts, styles, and assets.
+3.  You can double-click `dist/index.html` to run it directly via the `file://` protocol.
+
+## Download from the App:
+You can also download the offline version directly from the running application:
+1.  Open the browser menu (three dots).
+2.  Click **"Download Browser (Offline)"**.
+3.  This will download a single `.html` file that you can run anywhere without an internet connection.
 
 ## For Static Hosting (Vercel, Netlify, etc.):
-1.  Connect your repository to your hosting provider.
-2.  Set the build command to `npm run build`.
-3.  Set the output directory to `dist`.
-
-The application is configured with relative paths (`base: './'`), so it will work correctly on any static hosting platform or even when opened as a local file.
+1.  Set the build command to `npm run build`.
+2.  Set the output directory to `dist`.
+3.  The single `index.html` will be served.
